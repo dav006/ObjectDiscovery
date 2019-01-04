@@ -1,0 +1,29 @@
+# Uses SMH to create inverted index and model
+
+import smh
+from smh_prune import SMHD
+
+def createInvertedIndex(CORPUS_FILE, INVERT_INDEX_FILE):
+	print('open')
+	corpus = smh.listdb_load(CORPUS_FILE)
+	print('invert')
+	ifs = corpus.invert()
+	ifs.save(INVERT_INDEX_FILE)
+
+def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
+	corpus = smh.listdb_load(CORPUS_FILE)
+	ifs = smh.listdb_load(INVERT_INDEX_FILE)
+
+	discoverer = SMHD( 
+		tuple_size = 4, 
+		number_of_tuples =  500, 
+		min_set_size = 3, 
+		overlap = 0.6,
+		min_cluster_size = 3,
+		cluster_tuple_size = 3,
+		cluster_number_of_tuples =  255)
+
+	print('Iniciar fit')
+	models = discoverer.fit(ifs, prune = True, expand = corpus)
+	print('Terminar fit')
+	models.save(MODEL_FILE)
