@@ -1,0 +1,6 @@
+data/
+*.txt
+*.ifs
+*.corpus
+*.models
+*.pickle
