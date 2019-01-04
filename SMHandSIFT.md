@@ -9,9 +9,9 @@ Pre-requisits:
 1. Follow instructions to build and install SMH https://github.com/gibranfp/Sampled-MinHashing
 
 Instructions:
-1. run SMH/idToFile.py to generate mappings from fileId to fileName
-2. run SMH/toBagOfWords.py to generate binary bag words without stop words
-3. run SMH/toInvertIndex.py to generate inverted index
-4. run SMH/createModel.py to create object model
-5. run SMH/rankingImages.py to rank images for evaluation
-5. run SMH/evaluate.py to get AP for each landmark
+1. run sift/idToFile.py to generate mappings from fileId to fileName
+2. run sift/toBagOfWords.py to generate binary bag words without stop words
+3. run sift/toInvertIndex.py to generate inverted index
+4. run sift/createModel.py to create object model
+5. run sift/rankingImages.py to rank images for evaluation
+5. run sift/evaluate.py to get AP for each landmark
