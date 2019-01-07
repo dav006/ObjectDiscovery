@@ -15,10 +15,10 @@ def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
 	ifs = smh.listdb_load(INVERT_INDEX_FILE)
 
 	discoverer = SMHD( 
-		tuple_size = 4, 
-		number_of_tuples =  500, 
-		min_set_size = 3, 
-		overlap = 0.6,
+		tuple_size = 2, 
+		number_of_tuples = 400, 
+		min_set_size = 2, 
+		overlap = 0.8,
 		min_cluster_size = 3,
 		cluster_tuple_size = 3,
 		cluster_number_of_tuples =  255)

@@ -26,8 +26,9 @@ print(okAndGoodGroundTruthImages.keys())
 
 allObjetsAP = []
 averageAP = 0.0
-for key, value in okAndGoodGroundTruthImages.iteritems():
+for key in sorted(okAndGoodGroundTruthImages):
 	maxAP = -1
+        value = okAndGoodGroundTruthImages[key]
 	positiveImages = float(len(value))
 	bestIndex = 0
 	indexDiscoveredObject = 0
