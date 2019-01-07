@@ -12,4 +12,4 @@ class Config:
     MODEL_FILE = 'oxford.models'
 
     #Evaluation
-    GROUND_TRUTH_PATH = '../gt_files_170407/'
+    GROUND_TRUTH_PATH = '../data/gt_files_170407/'
