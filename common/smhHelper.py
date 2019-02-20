@@ -16,12 +16,14 @@ def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
 
 	discoverer = SMHD( 
 		tuple_size = 2, 
-		number_of_tuples = 400, 
-		min_set_size = 2, 
+		number_of_tuples = 1733, 
+		min_set_size = 3, 
 		overlap = 0.8,
 		min_cluster_size = 3,
 		cluster_tuple_size = 3,
-		cluster_number_of_tuples =  255)
+		cluster_number_of_tuples =  255,
+		cluster_table_size=2**24
+		)
 
 	print('Iniciar fit')
 	models = discoverer.fit(ifs, prune = True, expand = corpus)

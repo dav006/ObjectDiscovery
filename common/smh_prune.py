@@ -35,8 +35,11 @@ class SMHD(SMHDiscoverer):
         Discovers patterns from a database of lists
         """
         mined = self.mine(listdb, weights = weights, expand = expand)
+        print('Finish minning')
         if prune:
+            print('Start prunning')
             sa.sampledmh_prune(listdb.ldb,mined.ldb,3,3,0.7,0.8)
+            print('End prunning')
         models = sa.mhlink_cluster(mined.ldb,
                                    self.cluster_tuple_size_,
                                    self.cluster_number_of_tuples_,
