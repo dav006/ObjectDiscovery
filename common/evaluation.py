@@ -49,3 +49,25 @@ def computeMyAP(positive, junk, ranked_list):
 
 	ap = sklearn.metrics.auc(recall,precision)
 	return ap
+
+def computeMyAPGoogle(positive, ranked_list):
+        precision= []
+        recall = []
+
+        precision.append(1.0)
+        recall.append(0.0)
+        truePositives = 0.0
+        retrievedImages = 0.0
+
+        positiveImages = float(len(positive))
+
+        for fileOb in ranked_list:
+                if fileOb in positive:
+                        truePositives +=1.0
+
+                retrievedImages+=1.0
+                precision.append(truePositives/retrievedImages)
+                recall.append(truePositives/positiveImages)
+
+        ap = sklearn.metrics.auc(recall,precision)
+        return ap
