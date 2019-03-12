@@ -34,12 +34,6 @@ def paralelFunc(value,allObjetsToFileRanked):
 objectsRankingFile = 'allObjetsRankingFile.pickle'
 groundTruthFile = 'googleGroundTruth.pickle'
 
-model = smh.listdb_load(Config.MODEL_FILE)
-print('Cargue modelo')
-sys.stdout.flush()
-ifs = smh.listdb_load(Config.INVERT_INDEX_FILE)
-print('Cargue ifs')
-sys.stdout.flush()
 allObjetsToFileRanked = []
 with open(objectsRankingFile, 'rb') as handle:
     allObjetsToFileRanked= pickle.load(handle)
@@ -55,7 +49,7 @@ sys.stdout.flush()
 allObjetsAP = []
 averageAP = 0.0
 
-with poolcontext(processes=multiprocessing.cpu_count()-1) as pool:
+with poolcontext(processes=multiprocessing.cpu_count()) as pool:
         results = pool.map(partial(paralelFunc, allObjetsToFileRanked=allObjetsToFileRanked), groundTruthImages.values())
 
 for result in results:

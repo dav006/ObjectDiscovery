@@ -11,11 +11,11 @@ import hnswlib
 
 DIM=40
 MAX_ITER = 15
-CLUSTER_NUM = 250000
+CLUSTER_NUM = 1000000
 DELF_FEATURES = 387367746
-SIZE_SPLIT = 6
-SIZE_FILES_SPLIT = 83057
-data_split = [(0,83057),(83057,166114),(166114,249171),(249171,332228),(332228,415285),(415285,498340)]
+SIZE_SPLIT = 3
+SIZE_FILES_SPLIT = 166114
+data_split = [(0,166114),(166114,332228)(332228,498340)]
 
 def count_delf(inputpath):
     print('Read delf Features')
@@ -122,13 +122,13 @@ def kMeans(idToFile,clusters):
 		    if clus_size[j] > 0:
 			clusters[j] = new_centers[j] / clus_size[j]
 		    else:
-			rSplit = random.randint(0, 8)
-                        rFile = random.randint(data_split[rSplit][0],data_split[rSplit][1])
+			rSplit = random.randint(0, SIZE_SPLIT-1)
+                        rFile = random.randint(data_split[rSplit][0],data_split[rSplit][1]-1)
 			feature = randomFeature(rFile,idToFile)
 			clusters[j] = feature
 			print('Empty cluster replaced')
                 if i==MAX_ITER-1:
-                    p.save_index("hsm_250000_15iter_google.bin")
+                    p.save_index("hsm_1000000_15iter_google.bin")
 
 	print('Total time: %.3f s' % (time.time() - start_time))
     
