@@ -12,6 +12,9 @@ import multiprocessing
 from functools import partial
 from contextlib import contextmanager
 
+TOTAL_LANDMARKS = 40.0
+#total = 14938
+
 @contextmanager
 def poolcontext(*args, **kwargs):
     pool = multiprocessing.Pool(*args, **kwargs)
@@ -32,7 +35,7 @@ def paralelFunc(value,allObjetsToFileRanked):
 
 # Folder paths
 objectsRankingFile = 'allObjetsRankingFile.pickle'
-groundTruthFile = 'googleGroundTruth.pickle'
+groundTruthFile = 'googleGroundTruth_selected.pickle'
 
 allObjetsToFileRanked = []
 with open(objectsRankingFile, 'rb') as handle:
@@ -48,6 +51,8 @@ print('Size of allGroundTruthImages: {}'.format(len(groundTruthImages)))
 sys.stdout.flush()
 allObjetsAP = []
 averageAP = 0.0
+for key in groundTruthImages:
+	print(key)
 
 with poolcontext(processes=multiprocessing.cpu_count()) as pool:
         results = pool.map(partial(paralelFunc, allObjetsToFileRanked=allObjetsToFileRanked), groundTruthImages.values())
@@ -55,4 +60,4 @@ with poolcontext(processes=multiprocessing.cpu_count()) as pool:
 for result in results:
 	averageAP+=result
 
-print('Average AP: {}'.format(averageAP/14304.0))
+print('Average AP: {}'.format(averageAP/TOTAL_LANDMARKS))

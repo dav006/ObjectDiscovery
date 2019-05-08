@@ -10,12 +10,13 @@ import tqdm
 import hnswlib
 
 DIM=40
-MAX_ITER = 15
-CLUSTER_NUM = 1000000
-DELF_FEATURES = 387367746
-SIZE_SPLIT = 3
-SIZE_FILES_SPLIT = 166114
-data_split = [(0,166114),(166114,332228)(332228,498340)]
+MAX_ITER = 30
+CLUSTER_NUM = 150000
+#DELF_FEATURES = 387367746
+DELF_FEATURES = 183546693
+SIZE_SPLIT = 2
+SIZE_FILES_SPLIT = 104232
+data_split = [(0,104232),(104232,208463)]
 
 def count_delf(inputpath):
     print('Read delf Features')
@@ -97,7 +98,7 @@ def kMeans(idToFile,clusters):
 
                 print('Build Tree')
 		p = hnswlib.Index(space='l2', dim=DIM)
-                p.init_index(max_elements=CLUSTER_NUM, ef_construction=250, M=16)
+                p.init_index(max_elements=CLUSTER_NUM, ef_construction=100, M=16)
                 p.add_items(clusters)
 		clus_size = np.zeros(CLUSTER_NUM)
 		new_centers = np.zeros((CLUSTER_NUM,DIM))
@@ -128,15 +129,17 @@ def kMeans(idToFile,clusters):
 			clusters[j] = feature
 			print('Empty cluster replaced')
                 if i==MAX_ITER-1:
-                    p.save_index("hsm_1000000_15iter_google.bin")
+                    p.save_index("hsm_150000_30iter_google_11_desba.bin")
 
 	print('Total time: %.3f s' % (time.time() - start_time))
     
 def main(inputpath):
     if os.path.isdir(inputpath):
+	
         idToFile = read_delf_features(inputpath)
         clusters = get_random_clusters(idToFile)
         kMeans(idToFile,clusters)
+	
 	#count_delf(inputpath)
 
     else:

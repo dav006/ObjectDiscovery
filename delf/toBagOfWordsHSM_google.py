@@ -4,19 +4,22 @@ import os
 from config import Config
 import numpy as np
 import hnswlib
+import sys
 
-FILES = 498340
+#FILES = 498340
+#FILES=607
+FILES=208463
 stopWords = set()
 
-inputpath = '../../google_landmark_attention/'
+inputpath = '../../google_landmark_attention_selected/'
 # Reiniting, loading the index
 p = hnswlib.Index(space='l2', dim=40)
-p.load_index("250000/hsm_250000_15iter_google.bin", max_elements = 250000)
+p.load_index("150000/hsm_150000_30iter_google_40_desbalan.bin", max_elements = 150000)
 
 #Convert DELF descriptors to visual words for each delf file
 print('Convert DELF')
 filelist = sorted(os.listdir(inputpath+'.'))
-allVisualWords = [None]*498340
+allVisualWords = [None]*FILES
 count = 0
 for entry in filelist:
 	_, _, descriptors, _, _ = feature_io.ReadFromFile(inputpath+entry)
@@ -26,6 +29,7 @@ for entry in filelist:
 	allVisualWords[count] = visualwords
 	count+=1
 	print(count)
+	sys.stdout.flush()
 
 print('Get global count')
 # Get global count
@@ -37,8 +41,10 @@ for wordToFreq in allVisualWords:
 		else:
 			globalCount[wordId] += 1
 
-minCount = 498
-maxCount = 149502
+#minCount = 498
+#maxCount = 149502
+minCount = 209
+maxCount = 62539
 #print('Min frecuency : {} and Max frecuency : {}'.format(minFreq,maxFreq))
 addStop = 0
 for key,value in globalCount.items():

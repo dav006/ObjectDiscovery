@@ -11,8 +11,9 @@ import hnswlib
 
 DIM=40
 MAX_ITER = 30
-CLUSTER_NUM = 250000
-DELF_FEATURES = 3810180
+CLUSTER_NUM = 150000
+#DELF_FEATURES = 3810180
+DELF_FEATURES = 183546693
 
 def read_delf_features(inputpath):
     print('Read delf Features')
@@ -54,8 +55,9 @@ def kMeans(delf_features,clusters):
 		    new_centers[labels[0,0]] += feature
 		    clus_size[labels[0,0]]+=1
                     index+=1
-                    sys.stdout.write("\r Percent : %.3f" % (index/float(DELF_FEATURES)))
-                    sys.stdout.flush()
+		    if index%1000 is 0:
+                    	sys.stdout.write("\r Percent : %.3f" % (index/float(DELF_FEATURES)))
+                    	sys.stdout.flush()
                 print('\n')
                 print('Re-assing cluster')
                 for j in range(CLUSTER_NUM):
@@ -66,7 +68,7 @@ def kMeans(delf_features,clusters):
 			clusters[j] = delf_features[rval]
 			print('Empty cluster replaced')
                 if i==MAX_ITER-1:
-                    p.save_index("hsm_250000_30iter.bin")
+                    p.save_index("hsm_150000_30iter_google_40_desbalan.bin")
 
 	print('Total time: %.3f s' % (time.time() - start_time))
     

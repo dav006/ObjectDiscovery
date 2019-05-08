@@ -4,7 +4,7 @@ from config import Config
 
 index = 0
 dictIndexFile = {}
-for file in sorted(os.listdir('../../oxford5k_features_attention/'+'.')):
+for file in sorted(os.listdir('../../google_landmark_attention_selected/'+'.')):
 	removedExt = ".".join(file.split(".")[:-1])
 	dictIndexFile[index] = removedExt
 	index+=1
