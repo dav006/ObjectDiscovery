@@ -6,7 +6,7 @@ import operator
 import sys
 
 filepaths = ['../../annotations_landmarks/annotation_clean_train.txt','../../annotations_landmarks/annotation_clean_val.txt']
-datapaths = ['../../annotations_landmarks_clean_train/','../../annotations_landmarks_clean_validate/']
+datapaths = ['../../annotations_landmarks_clean_train_crop/','../../annotations_landmarks_clean_validate_crop/']
 
 output = '../../annotations_landmarks_clean_struct/'
 

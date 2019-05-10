@@ -11,7 +11,7 @@ from tensorflow.keras.layers import GlobalAveragePooling2D,Dense
 from tensorflow.keras.models import Model, Sequential
 from skimage.transform import resize
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
+from tensorflow.python.keras.optimizers import Adam
 
 def random_crop(img, random_crop_size):
     # Note: image_data_format is 'channel_last'
@@ -48,13 +48,19 @@ train_generator = datagen.flow_from_directory(DATA_DIR,
                                                     target_size=(HEIGHT, WIDTH), 
 						    interpolation='bicubic',
                                                     batch_size=BATCH_SIZE,
-						    subset='training')
+						    class_mode='categorical',
+                                                    shuffle=True,
+						    subset='training',
+                                                    color_mode='rgb')
 
 valid_generator = datagen.flow_from_directory(DATA_DIR,
                                                     target_size=(HEIGHT, WIDTH),
 						    interpolation='bicubic',
                                                     batch_size=BATCH_SIZE,
-						    subset='validation')
+						    class_mode='categorical',
+                                                    shuffle=False,
+						    subset='validation',
+                                                    color_mode='rgb')
 
 train_crops = crop_generator(train_generator, 224)
 valid_crops = crop_generator(valid_generator, 224)
@@ -78,38 +84,31 @@ def extract_train():
   model = Model(resnet50.input, fc)
 
   for layer in resnet50.layers:
-    layer.trainable = False
+    layer.trainable = True
 
-  print('RestNet50-FC-1024-582')
+  print('RestNet50-FC-1024-585')
   model.summary(line_length=100)
   model.compile(
-    optimizer=tf.train.AdamOptimizer(),
+    optimizer=Adam(lr=1e-3),
     loss='categorical_crossentropy',
     metrics=['accuracy']
   )
 
-  
-  print('Finish Resize')
-
   tensorboard = TensorBoard(
     log_dir='./graphs/transfer_learning' + timestamp(), histogram_freq=0, write_graph=True, write_images=False)
 
-  model.fit_generator(train_crops,steps_per_epoch=BATCH_SIZE, epochs=200,validation_data = valid_crops,validation_steps = BATCH_SIZE, callbacks=[tensorboard])
+  model.fit_generator(train_crops,steps_per_epoch=train_generator.samples//BATCH_SIZE, epochs=30,validation_data = valid_crops,validation_steps = valid_generator.samples//BATCH_SIZE, callbacks=[tensorboard])
 
   #evaluation = model.evaluate(X_tst, Y_tst)
   #print(evaluation)
 
 
 def main(args):
-  err_msg = 'Unknown function, options: extract, train, extract_train'
+  err_msg = 'Unknown function, options: download, extract_train'
   if len(args) > 1:
     func_name = args[1]
     if func_name == 'download':
       download()
-    elif func_name == 'extract':
-      extract()
-    elif func_name == 'train':
-      train()
     elif func_name == 'extract_train':
       extract_train()
     else:
