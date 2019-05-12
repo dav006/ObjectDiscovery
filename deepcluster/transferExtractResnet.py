@@ -42,7 +42,12 @@ WIDTH = 250
 BATCH_SIZE = 16
 NUM_CLASSES=585
 
-datagen =  ImageDataGenerator(preprocessing_function=preprocess_input,validation_split=0.2)
+datagen =  ImageDataGenerator(preprocessing_function=preprocess_input,validation_split=0.2,rotation_range=40,
+width_shift_range=0.2,
+height_shift_range=0.2,
+shear_range=0.2,
+zoom_range=0.2,
+horizontal_flip=True,)
 
 train_generator = datagen.flow_from_directory(DATA_DIR, 
                                                     target_size=(HEIGHT, WIDTH), 
@@ -84,12 +89,12 @@ def extract_train():
   model = Model(resnet50.input, fc)
 
   for layer in resnet50.layers:
-    layer.trainable = True
+    layer.trainable = False
 
   print('RestNet50-FC-1024-585')
   model.summary(line_length=100)
   model.compile(
-    optimizer=Adam(lr=1e-3),
+    optimizer=Adam(lr=2e-5),
     loss='categorical_crossentropy',
     metrics=['accuracy']
   )
@@ -99,6 +104,18 @@ def extract_train():
 
   model.fit_generator(train_crops,steps_per_epoch=train_generator.samples//BATCH_SIZE, epochs=30,validation_data = valid_crops,validation_steps = valid_generator.samples//BATCH_SIZE, callbacks=[tensorboard])
 
+  for layer in resnet50.layers:
+    layer.trainable = True
+
+  model.compile(
+    optimizer=Adam(lr=1e-5),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+  )
+
+
+  model.fit_generator(train_crops,steps_per_epoch=train_generator.samples//BATCH_SIZE, epochs=30,validation_data = valid_crops,validation_steps = valid_generator.samples//BATCH_SIZE, callbacks=[tensorboard])
+  model.save('finetunned.h5')
   #evaluation = model.evaluate(X_tst, Y_tst)
   #print(evaluation)
 
