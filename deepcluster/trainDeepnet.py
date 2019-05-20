@@ -101,13 +101,12 @@ fc=Dense(NUM_CLASSES, activation='softmax', name='fc')(model1.layers[-2].output)
 #model3 = Model(inputs=model1.input,outputs=[fc,model1.get_layer('global_average_pooling2d').output])
 model3 = Model(inputs=model1.input,outputs=fc)
 
-layerIndex = 0
+layerFlag = False
 for layer in model1.layers:
-    if layerIndex > 165:
-	layer.trainable = True
-    else:
-        layer.trainable = False
-    layerIndex+=1
+    print layer.name
+    if layer.name == 'res5a_branch2a':
+        layerFlag = True
+    layer.trainable = layerFlag
 
 model3.summary(line_length=100)
 model3.compile(
