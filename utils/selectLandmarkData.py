@@ -6,7 +6,7 @@ import operator
 
 inputpath = '../data/google-landmark-dataset-resize/'
 outputpath = '../../google_landmark_selected/'
-maxLandmarks = 11
+maxLandmarks = 40
 
 groundTruthCount = {}
 groundTruth = {}
@@ -24,7 +24,7 @@ for key,_ in sorted(groundTruthCount.items(), key=operator.itemgetter(1),reverse
 		if not os.path.exists(outputpath+value+'.jpg'):
  			copyfile(inputpath+value+'.jpg', outputpath+value+'.jpg')
 		countImages+=1
-		if countImages >= 2000:
+		if countImages >= 500:
 			break
 	countLandmarks+=1
 	if countLandmarks == maxLandmarks:
