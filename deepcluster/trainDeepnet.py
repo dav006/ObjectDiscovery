@@ -20,18 +20,13 @@ IMAGE_PATH = '../../google_landmark_selected_crop/'
 HEIGHT = 224
 WIDTH = 224
 NUM_CLASSES = 40
-TOTAL_IMAGES = 1000
+TOTAL_IMAGES = 20000
+BATCH_SIZE = 20
+EPOCHS = 10
 
 CORPUS_FILE = 'google.corpus'
 INVERT_INDEX_FILE = 'google.ifs'
 MODEL_FILE = 'google.model'
-
-# defining a function to read images
-def read_img(img_path):
-    img = image.load_img(img_path, target_size=(HEIGHT, WIDTH, 3))
-    img = image.img_to_array(img)
-
-    return img
 
 def save_corpus(corpus_file,X_data_gap):
     outputFile = open(corpus_file,'w')
@@ -56,44 +51,69 @@ datagen =  ImageDataGenerator(preprocessing_function=preprocess_input)
 data_generator = datagen.flow_from_directory(IMAGE_PATH,
                                                     target_size=(HEIGHT, WIDTH),
                                                     interpolation='bicubic',
-                                                    batch_size=TOTAL_IMAGES,
+                                                    batch_size=BATCH_SIZE,
                                                     class_mode='categorical',
                                                     shuffle=False,
                                                     color_mode='rgb')
 
 # Initial extraction of visual vocab and data creation
 print 'Loading model'
+start_time = time.time()
 model1 = load_model('finetunned.h5')
 model2 = Model(model1.input, model1.get_layer('global_average_pooling2d').output)
+print('Loading model time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
 X_data_gap = np.zeros(shape=(TOTAL_IMAGES, 2048))
 print 'Predict data'
-i=0
-
-input_batch_global = 0
+start_time = time.time()
 for inputs_batch,labels_batch in data_generator:
-    input_batch_global = inputs_batch
-    X_data_gap = model2.predict(inputs_batch)
-    break
+    idx = (data_generator.batch_index - 1) * data_generator.batch_size
+    if idx<0:
+       idx = TOTAL_IMAGES-data_generator.batch_size
+       X_data_gap[idx:idx+data_generator.batch_size] = model2.predict(inputs_batch)
+       break
+    #if idx+data_generator.batch_size>TOTAL_IMAGES:
+    #    break
+    # print idx
+    sys.stdout.flush()
+    X_data_gap[idx:idx+data_generator.batch_size] = model2.predict(inputs_batch)
+
+data_generator.reset()
+print('Predict data time: %.3f s' % (time.time() - start_time))
+
 del model2
 # Save to .corpus
 print 'Create corpus'
+sys.stdout.flush()
 save_corpus(CORPUS_FILE,X_data_gap)
 # Create inverted index
 print 'Create inverted index'
+sys.stdout.flush()
 smhHelper.createInvertedIndex(CORPUS_FILE,INVERT_INDEX_FILE)
 # Create model
 print 'Create model'
+start_time = time.time()
 smhHelper.createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE)
+print('Create model time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
 # Create ranking file
+start_time = time.time()
 Y_data = selectModels.selectModels(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
+print('Select models time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
 # Evaluate MAPP
-
+start_time = time.time()
 execfile('rankingImages.py')
-execfile('evaluateGoogle.py')
+print('ranking images time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
+start_time = time.time()
+execfile('evaluateGoogleThread.py')
+print('Evaluate time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
 # Create Model
 
@@ -103,7 +123,6 @@ model3 = Model(inputs=model1.input,outputs=fc)
 
 layerFlag = False
 for layer in model1.layers:
-    print layer.name
     if layer.name == 'res5a_branch2a':
         layerFlag = True
     layer.trainable = layerFlag
@@ -115,28 +134,97 @@ model3.compile(
     metrics=['accuracy']
   )
 
-
+accuracyHistory = [None]*EPOCHS
+#lossHistory = [None]*EPOCHS
 # Train
-for i in range(5):
-
+for i in range(EPOCHS):
+    epoch_time = time.time()
+    accuracyEpoch = 0.0
+    lossEpoch = 0.0
     Y_data = to_categorical(Y_data,num_classes=NUM_CLASSES)
-    history = model3.fit(input_batch_global, np.array(Y_data), batch_size=TOTAL_IMAGES, epochs=1)
+    print 'Start train epoch : '+str(i)
+    '''
+    history = model3.fit_generator(data_generator,steps_per_epoch=data_generator.samples//BATCH_SIZE, epochs=1)
+    '''
+    for inputs_batch,labels_batch in data_generator:
+    	idx = (data_generator.batch_index - 1) * data_generator.batch_size
+        if idx<0:
+           idx = TOTAL_IMAGES-data_generator.batch_size
+           #print idx
+           history = model3.fit(inputs_batch, np.array(Y_data[idx : idx + data_generator.batch_size]), batch_size=BATCH_SIZE, epochs=1,verbose=0)
+           accuracyEpoch += history.history['acc']
+          # loss += history.history['loss']
+           sys.stdout.flush()
+           break
+
+        #if idx+data_generator.batch_size>TOTAL_IMAGES:
+        #   break
+        # print idx
+        history = model3.fit(inputs_batch, np.array(Y_data[idx : idx + data_generator.batch_size]), batch_size=BATCH_SIZE, epochs=1,verbose=0)
+        accuracyEpoch += history.history['acc'][0]
+        #loss += history.history['loss'][0]
+    
+    data_generator.reset()
+    accuracyHistory[i] = accuracyEpoch / (float(TOTAL_IMAGES)/float(BATCH_SIZE))
+    #lossHistory[i] = lossEpoch / (float(TOTAL_IMAGES)/float(BATCH_SIZE))
+    print 'Accuracy : '+str(accuracyHistory[i])
+    #print 'Loss : '+str(lossHistory[i])
+
+    # Extract data from GAP
+    print 'Predict epoch'
+    start_time = time.time()
+    sys.stdout.flush()
     model4 = Model(model3.input, model3.get_layer('global_average_pooling2d').output)
-    X_data_gap = model4.predict(inputs_batch)
+    for inputs_batch,labels_batch in data_generator:
+        idx = (data_generator.batch_index - 1) * data_generator.batch_size
+        if idx<0:
+           idx = TOTAL_IMAGES-data_generator.batch_size
+           #print idx
+           #sys.stdout.flush()
+           X_data_gap[idx:idx+data_generator.batch_size] = model4.predict(inputs_batch)
+           break
+        #if idx+data_generator.batch_size>TOTAL_IMAGES:
+        #   break
+        # print idx
+        X_data_gap[idx:idx+data_generator.batch_size] = model4.predict(inputs_batch)
     del model4
+    data_generator.reset()
+    print('Predict time: %.3f s' % (time.time() - start_time))
 
     # Save to .corpus
     print 'Create corpus'
+    sys.stdout.flush()
     save_corpus(CORPUS_FILE,X_data_gap)
+    
     # Create inverted index
     print 'Create inverted index'
     smhHelper.createInvertedIndex(CORPUS_FILE,INVERT_INDEX_FILE)
+    
     # Create model
     print 'Create model'
+    start_time = time.time()
     smhHelper.createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE)
+    print('Create model time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+
     # Create ranking file
+    start_time = time.time()
     Y_data = selectModels.selectModels(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
+    print('Select models time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
 
     # Evaluate MAPP
+    start_time = time.time()
     execfile('rankingImages.py')
-    execfile('evaluateGoogle.py')
+    print('ranking images time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+ 
+    start_time = time.time()
+    execfile('evaluateGoogleThread.py')
+    print('Evaluate time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+
+    print('Epoch time: %.3f s' % (time.time() - epoch_time))
+    sys.stdout.flush()
+print accuracyHistory
+#print lossHistory

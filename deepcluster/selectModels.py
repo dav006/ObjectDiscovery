@@ -20,8 +20,9 @@ def selectModels(numModels,MODEL_FILE,INVERT_INDEX_FILE,numImages):
 			for image in ifs.ldb[visualWordName]:
 				if image.item not in imageCount:
 					imageCount[image.item] = 0
+					count+=1
 				imageCount[image.item] += 1
-				count+=1
+				#count+=1
 		allObjects[index]=imageCount
 		allObjectsCountImages[index]=count
 		index+=1

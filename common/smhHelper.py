@@ -16,7 +16,7 @@ def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
 
 	discoverer = SMHD( 
 		tuple_size = 2, 
-		number_of_tuples = 1733, 
+		number_of_tuples = 433, 
 		min_set_size = 3, 
 		overlap = 0.8,
 		min_cluster_size = 3,
@@ -26,6 +26,6 @@ def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
 		)
 
 	print('Iniciar fit')
-	models = discoverer.fit(ifs, prune = True, expand = corpus)
+	models = discoverer.fit(ifs, prune = False, expand = corpus)
 	print('Terminar fit')
 	models.save(MODEL_FILE)
