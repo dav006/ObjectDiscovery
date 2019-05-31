@@ -28,7 +28,7 @@ WIDTH = 224
 NUM_CLASSES = 100
 TOTAL_IMAGES = 20000
 BATCH_SIZE = 20
-EPOCHS = 10
+EPOCHS = 30
 CONV_OUTPUT = 7
 CONV_FEATURES = 980000
 DIM=2048
@@ -50,9 +50,9 @@ def convert_features_image(allDesc):
         index+=1
     return finalAllDesc
 
-def convert_features_row(allDesc):
+def convert_features_row(allDesc,dim):
 
-    finalAllDesc = np.zeros(shape=(CONV_FEATURES,DIM))
+    finalAllDesc = np.zeros(shape=(CONV_FEATURES,dim))
     index=0
     for image in allDesc:
         for row in image:
@@ -62,13 +62,39 @@ def convert_features_row(allDesc):
     return finalAllDesc
 
 
+def applyPCA(X_data,dim):
+    
+    start_time = time.time()
+    X_data = Normalizer(copy=False).fit_transform(X_data)
+    print('Scaler time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+    X_data = PCA(n_components=DIM,whiten=True,copy=False).fit_transform(X_data)
+    print('PCA time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+    X_data = Normalizer(copy=False).fit_transform(X_data)
+    print('Scaler time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+    return X_data
+
+def evaluateMAPP():
+    start_time = time.time()
+    execfile('rankingImages.py')
+    print('ranking images time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+
+    start_time = time.time()
+    execfile('evaluateGoogleThread.py')
+    print('Evaluate time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
+
+
 '''
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"] = ""
 '''
 # Load data
 print 'Creating data generators'
-one_hot = MultiLabelBinarizer(classes=NUM_CLASSES)
+one_hot = MultiLabelBinarizer(classes=range(NUM_CLASSES))
 datagen =  ImageDataGenerator(preprocessing_function=preprocess_input)
 data_generator = datagen.flow_from_directory(IMAGE_PATH,
                                                     target_size=(HEIGHT, WIDTH),
@@ -105,23 +131,14 @@ for inputs_batch,labels_batch in data_generator:
 
 data_generator.reset()
 #X_data_conv = np.load('X_data_conv.npy')
-X_data_conv = convert_features_row(X_data_conv)
+X_data_conv = convert_features_row(X_data_conv,DIM)
 print('Predict data time: %.3f s' % (time.time() - start_time))
 del model2
 
 #PCA
 print 'Generate PCA'
 sys.stdout.flush()
-start_time = time.time()
-X_data_conv = Normalizer(copy=False).fit_transform(X_data_conv)
-print('Scaler time: %.3f s' % (time.time() - start_time))
-sys.stdout.flush()
-X_data_conv = PCA(n_components=PCA_DIM,whiten=True,copy=False).fit_transform(X_data_conv)
-print('PCA time: %.3f s' % (time.time() - start_time))
-sys.stdout.flush()
-X_data_conv = Normalizer(copy=False).fit_transform(X_data_conv)
-print('Scaler time: %.3f s' % (time.time() - start_time))
-sys.stdout.flush()
+X_data_conv = applyPCA(X_data_conv,PCA_DIM)
 
 # Generate visual vocabulary
 print 'Generate Visual Vocabulary'
@@ -152,23 +169,19 @@ sys.stdout.flush()
 
 # Create ranking file
 start_time = time.time()
-Y_data = selectModels.selectModels(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
+
+Y_data = selectModels.selectModelsMulti(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
+
 print('Select models time: %.3f s' % (time.time() - start_time))
 sys.stdout.flush()
 
 # Evaluate MAPP
-start_time = time.time()
-execfile('rankingImages.py')
-print('ranking images time: %.3f s' % (time.time() - start_time))
+print 'Evaluate'
 sys.stdout.flush()
-
-start_time = time.time()
-execfile('evaluateGoogleThread.py')
-print('Evaluate time: %.3f s' % (time.time() - start_time))
-sys.stdout.flush()
+evaluateMAPP()
 
 # Create Model
-fc=Dense(NUM_CLASSES, activation='softmax', name='fc')(model1.layers[-2].output)
+fc=Dense(NUM_CLASSES, activation='sigmoid', name='fc')(model1.layers[-2].output)
 model3 = Model(inputs=model1.input,outputs=fc)
 
 layerFlag = False
@@ -180,7 +193,7 @@ for layer in model1.layers:
 #model3.summary(line_length=100)
 model3.compile(
     optimizer=Adam(lr=1e-5),
-    loss='categorical_crossentropy',
+    loss='binary_crossentropy',
     metrics=['accuracy']
   )
 
@@ -192,12 +205,12 @@ for i in range(EPOCHS):
     lossEpoch = 0.0
     Y_data_keep = (Y_data > -1)
     Y_data = Y_data[Y_data_keep]
-    Y_data = to_categorical(Y_data,num_classes=NUM_CLASSES)
+    Y_data = one_hot.fit_transform(Y_data)
     print 'Start train epoch : '+str(i)
     start_time = time.time()
     sys.stdout.flush()
-    
-    idy=0
+   
+    idy=0 
     for inputs_batch,labels_batch in data_generator:
     	idx = (data_generator.batch_index - 1) * data_generator.batch_size
         if idx<0:
@@ -209,8 +222,9 @@ for i in range(EPOCHS):
            accuracyEpoch += history.history['acc']
            sys.stdout.flush()
            break
-        
+
         Y_data_selected = Y_data_keep[idx : idx + data_generator.batch_size]
+	#print idx
         inputs_batch = inputs_batch[Y_data_selected]
         history = model3.fit(inputs_batch, np.array(Y_data[idy : idy + inputs_batch.shape[0]]), batch_size=inputs_batch.shape[0], epochs=1,verbose=0)
         accuracyEpoch += history.history['acc'][0]
@@ -237,22 +251,13 @@ for i in range(EPOCHS):
         X_data_conv[idx:idx+data_generator.batch_size] = model4.predict(inputs_batch)
     del model4
     data_generator.reset()
-    X_data_conv = convert_features_row(X_data_conv)
+    X_data_conv = convert_features_row(X_data_conv,dim)
     print('Predict time: %.3f s' % (time.time() - start_time))
 
     #PCA
     print 'Generate PCA'
     sys.stdout.flush()
-    start_time = time.time()
-    X_data_conv = Normalizer(copy=False).fit_transform(X_data_conv)
-    print('Scaler time: %.3f s' % (time.time() - start_time))
-    sys.stdout.flush()
-    X_data_conv = PCA(n_components=PCA_DIM,whiten=True,copy=False).fit_transform(X_data_conv)
-    print('PCA time: %.3f s' % (time.time() - start_time))
-    sys.stdout.flush()
-    X_data_conv = Normalizer(copy=False).fit_transform(X_data_conv)
-    print('Scaler time: %.3f s' % (time.time() - start_time))
-    sys.stdout.flush()
+    X_data_conv = applyPCA(X_data_conv,PCA_DIM)
 
     # Generate visual vocabulary
     print 'Generate Visual Vocabulary'
@@ -278,6 +283,7 @@ for i in range(EPOCHS):
     
     # Create model
     print 'Create model'
+    sys.stdout.flush()
     start_time = time.time()
     smhHelper.createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE)
     print('Create model time: %.3f s' % (time.time() - start_time))
@@ -285,20 +291,14 @@ for i in range(EPOCHS):
 
     # Create ranking file
     start_time = time.time()
-    Y_data = selectModels.selectModels(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
+    Y_data = selectModels.selectModelsMulti(NUM_CLASSES,MODEL_FILE,INVERT_INDEX_FILE,TOTAL_IMAGES)
     print('Select models time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
 
     # Evaluate MAPP
-    start_time = time.time()
-    execfile('rankingImages.py')
-    print('ranking images time: %.3f s' % (time.time() - start_time))
+    print 'Evaluate'
     sys.stdout.flush()
- 
-    start_time = time.time()
-    execfile('evaluateGoogleThread.py')
-    print('Evaluate time: %.3f s' % (time.time() - start_time))
-    sys.stdout.flush()
+    evaluateMAPP()
 
     print('Epoch time: %.3f s' % (time.time() - epoch_time))
     sys.stdout.flush()
