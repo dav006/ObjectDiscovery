@@ -16,6 +16,7 @@ from tensorflow.keras.preprocessing import image
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.python.keras.optimizers import Adam
 from tensorflow.keras.utils import to_categorical
+from tensorflow.keras import regularizers, optimizers
 sys.path.append('../common/')
 import smhHelper
 import selectModels
@@ -28,12 +29,13 @@ WIDTH = 224
 NUM_CLASSES = 100
 TOTAL_IMAGES = 20000
 BATCH_SIZE = 20
-EPOCHS = 30
+EPOCHS = 15
 CONV_OUTPUT = 7
 CONV_FEATURES = 980000
 DIM=2048
 PCA_DIM = 512
 CONV_OUTPUT_POW=CONV_OUTPUT*CONV_OUTPUT
+CLUSTER_NUM = 25000
 
 CORPUS_FILE = 'google.corpus'
 INVERT_INDEX_FILE = 'google.ifs'
@@ -68,7 +70,7 @@ def applyPCA(X_data,dim):
     X_data = Normalizer(copy=False).fit_transform(X_data)
     print('Scaler time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
-    X_data = PCA(n_components=DIM,whiten=True,copy=False).fit_transform(X_data)
+    X_data = PCA(n_components=dim,whiten=True,copy=False).fit_transform(X_data)
     print('PCA time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
     X_data = Normalizer(copy=False).fit_transform(X_data)
@@ -81,12 +83,12 @@ def evaluateMAPP():
     execfile('rankingImages.py')
     print('ranking images time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
-
+    '''
     start_time = time.time()
     execfile('evaluateGoogleThread.py')
     print('Evaluate time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
-
+    '''
 
 '''
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   # see issue #152
@@ -143,7 +145,7 @@ X_data_conv = applyPCA(X_data_conv,PCA_DIM)
 # Generate visual vocabulary
 print 'Generate Visual Vocabulary'
 start_time = time.time()
-kmeans_ann_hns.generateVocab(X_data_conv,PCA_DIM)
+kmeans_ann_hns.generateVocab(X_data_conv,PCA_DIM,CLUSTER_NUM)
 print('Generate visual vocab time: %.3f s' % (time.time() - start_time))
 sys.stdout.flush()
 
@@ -151,7 +153,7 @@ sys.stdout.flush()
 print 'Create corpus'
 start_time = time.time()
 X_data_conv = convert_features_image(X_data_conv)
-toBagOfWordsHSM_google.createCorpus(X_data_conv,CORPUS_FILE)
+toBagOfWordsHSM_google.createCorpus(X_data_conv,CORPUS_FILE,CLUSTER_NUM,PCA_DIM)
 print('Create corpus time: %.3f s' % (time.time() - start_time))
 sys.stdout.flush()
 del X_data_conv
@@ -179,6 +181,10 @@ sys.stdout.flush()
 print 'Evaluate'
 sys.stdout.flush()
 evaluateMAPP()
+start_time = time.time()
+execfile('evaluateGoogleThread.py')
+print('Evaluate time: %.3f s' % (time.time() - start_time))
+sys.stdout.flush()
 
 # Create Model
 fc=Dense(NUM_CLASSES, activation='sigmoid', name='fc')(model1.layers[-2].output)
@@ -209,7 +215,7 @@ for i in range(EPOCHS):
     print 'Start train epoch : '+str(i)
     start_time = time.time()
     sys.stdout.flush()
-   
+    
     idy=0 
     for inputs_batch,labels_batch in data_generator:
     	idx = (data_generator.batch_index - 1) * data_generator.batch_size
@@ -251,7 +257,7 @@ for i in range(EPOCHS):
         X_data_conv[idx:idx+data_generator.batch_size] = model4.predict(inputs_batch)
     del model4
     data_generator.reset()
-    X_data_conv = convert_features_row(X_data_conv,dim)
+    X_data_conv = convert_features_row(X_data_conv,DIM)
     print('Predict time: %.3f s' % (time.time() - start_time))
 
     #PCA
@@ -262,7 +268,7 @@ for i in range(EPOCHS):
     # Generate visual vocabulary
     print 'Generate Visual Vocabulary'
     start_time = time.time()
-    kmeans_ann_hns.generateVocab(X_data_conv,PCA_DIM)
+    kmeans_ann_hns.generateVocab(X_data_conv,PCA_DIM,CLUSTER_NUM)
     print('Generate visual vocab time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
 
@@ -270,7 +276,7 @@ for i in range(EPOCHS):
     print 'Create corpus'
     start_time = time.time()
     X_data_conv = convert_features_image(X_data_conv)
-    toBagOfWordsHSM_google.createCorpus(X_data_conv,CORPUS_FILE)
+    toBagOfWordsHSM_google.createCorpus(X_data_conv,CORPUS_FILE,CLUSTER_NUM,PCA_DIM)
     print('Create corpus time: %.3f s' % (time.time() - start_time))
     sys.stdout.flush()
 
@@ -299,6 +305,10 @@ for i in range(EPOCHS):
     print 'Evaluate'
     sys.stdout.flush()
     evaluateMAPP()
+    start_time = time.time()
+    execfile('evaluateGoogleThread.py')
+    print('Evaluate time: %.3f s' % (time.time() - start_time))
+    sys.stdout.flush()
 
     print('Epoch time: %.3f s' % (time.time() - epoch_time))
     sys.stdout.flush()

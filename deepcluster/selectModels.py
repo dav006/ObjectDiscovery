@@ -34,6 +34,7 @@ def selectModels(numModels,MODEL_FILE,INVERT_INDEX_FILE,numImages):
 	imageToModel = np.zeros(numImages, dtype=int)
 	for image in range(numImages):
 		modelIndex = 0
+		imageToModel[image] = -1
 		for modelKey,_ in allObjectsSorted:
 			currentModel = allObjects[modelKey]
 			if image in currentModel:
@@ -74,28 +75,38 @@ def selectModelsMulti(numModels,MODEL_FILE,INVERT_INDEX_FILE,numImages):
 
         # Assign each image a model, based on the sorted list
 	imageToModel = []
+        averageLen = 0.0
 	for image in range(numImages):
-		imageList = []
+		imageList = set()
 		modelIndex = 0
 		for modelKey,_ in allObjectsSorted:
 			currentModel = allObjects[modelKey]
 			if image in currentModel:
-				imageList.append(modelIndex)
+				imageList.add(modelIndex)
 			modelIndex+=1
-		imageToModel.append(np.asarray(imageList))
+		averageLen += len(imageList)
+		if len(imageList) == 0:
+			imageList=-1
+		imageToModel.append(imageList)
 	
-	imageToModel = np.asarray(imageToModel)
+	imageToModel = np.array(imageToModel)
 	dictCount = {}
 	for image in imageToModel:
-		for model in image:
-			if model not in dictCount:
-				dictCount[model] = 0
-			dictCount[model] += 1
+		if image == -1:
+			if -1 not in dictCount:
+                                dictCount[-1] = 0
+                        dictCount[-1] += 1
+		else:
+			for model in image:
+				if model not in dictCount:
+					dictCount[model] = 0
+				dictCount[model] += 1
 	print dictCount
+	print 'Not Empty : '+str(averageLen/numImages)
 
 	return imageToModel
 
 
 if __name__ == '__main__':
-    selectModelsMulti(40,'google.model','google.ifs',500)
+    selectModelsMulti(100,'google.model','google.ifs',2000)
 

@@ -3,13 +3,13 @@ import numpy as np
 import hnswlib
 import sys
 
-def createCorpus(X_data_conv,CORPUS_FILE):
+def createCorpus(X_data_conv,CORPUS_FILE,cluster_num,dim):
 	stopWords = set()
 	inputpath = '../../google_landmark_attention_selected/'
 
 	# Reiniting, loading the index
-	p = hnswlib.Index(space='l2', dim=40)
-	p.load_index("hsm_25000_30iter_google_40_balan.bin", max_elements = 25000)
+	p = hnswlib.Index(space='l2', dim=dim)
+	p.load_index("hsm_25000_30iter_google_40_balan.bin", max_elements = cluster_num)
 
 	#Convert Conv descriptors to visual words
 	print('Convert Conv')

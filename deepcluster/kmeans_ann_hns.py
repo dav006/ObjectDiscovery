@@ -9,8 +9,7 @@ import tqdm
 import hnswlib
 
 DIM=2048
-MAX_ITER = 3
-CLUSTER_NUM = 25000
+MAX_ITER = 30
 #DELF_FEATURES = 3810180
 CONV_FEATURES = 980000
 
@@ -27,21 +26,23 @@ def read_features():
 			index+=1
     print('Read fetures Total time: %.3f s' % (time.time() - start_time))
     return finalAllDesc
-def get_random_clusters(features):
+def get_random_clusters(features,cluster_num):
     print('Get random clusters')
-    idx = random.sample(range(CONV_FEATURES), CLUSTER_NUM)
+    total_features = features.shape[0]
+    idx = random.sample(range(total_features), cluster_num)
     return features[idx,:]
 
-def kMeans(features,clusters,MY_DIM):
+def kMeans(features,clusters,MY_DIM,cluster_num):
 	start_time = time.time()
+	total_features = features.shape[0]
 
 	for i in tqdm.trange(MAX_ITER):
                 print('Build Tree')
 		p = hnswlib.Index(space='l2', dim=MY_DIM)
-                p.init_index(max_elements=CLUSTER_NUM, ef_construction=100, M=16)
+                p.init_index(max_elements=cluster_num, ef_construction=100, M=16)
                 p.add_items(clusters)
-		clus_size = np.zeros(CLUSTER_NUM)
-		new_centers = np.zeros((CLUSTER_NUM,MY_DIM))
+		clus_size = np.zeros(cluster_num)
+		new_centers = np.zeros((cluster_num,MY_DIM))
                 
                 print('Search KNN')
                 index = 0
@@ -51,16 +52,16 @@ def kMeans(features,clusters,MY_DIM):
 		    clus_size[labels[0,0]]+=1
                     index+=1
 		    if index%1000 is 0:
-                    	sys.stdout.write("\r Percent : %.3f" % (index/float(CONV_FEATURES)))
+                    	sys.stdout.write("\r Percent : %.3f" % (index/float(total_features)))
                     	sys.stdout.flush()
                 print('\n')
                 print('Re-assing cluster')
 		emptyClus = 0
-                for j in range(CLUSTER_NUM):
+                for j in range(cluster_num):
 		    if clus_size[j] > 0:
 			clusters[j] = new_centers[j] / clus_size[j]
 		    else:
-			rval = random.randint(0, CONV_FEATURES-1)
+			rval = random.randint(0, total_features-1)
 			clusters[j] = features[rval]
 			emptyClus+=1
 			#print('Empty cluster replaced')
@@ -75,9 +76,9 @@ def main():
 	clusters = get_random_clusters(features)
         kMeans(features,clusters,DIM)
 
-def generateVocab(features,PCA_DIM):
-	clusters = get_random_clusters(features)
-	kMeans(features,clusters,PCA_DIM)
+def generateVocab(features,PCA_DIM,cluster_num):
+	clusters = get_random_clusters(features,cluster_num)
+	kMeans(features,clusters,PCA_DIM,cluster_num)
       
 if __name__ == "__main__":
         main()
