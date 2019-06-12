@@ -10,13 +10,13 @@ def createInvertedIndex(CORPUS_FILE, INVERT_INDEX_FILE):
 	ifs = corpus.invert()
 	ifs.save(INVERT_INDEX_FILE)
 
-def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
+def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE,number_of_tuples_l):
 	corpus = smh.listdb_load(CORPUS_FILE)
 	ifs = smh.listdb_load(INVERT_INDEX_FILE)
 
 	discoverer = SMHD( 
-		tuple_size = 2, 
-		number_of_tuples = 433, 
+		tuple_size = 3, 
+		number_of_tuples = number_of_tuples_l, 
 		min_set_size = 3, 
 		overlap = 0.8,
 		min_cluster_size = 3,
@@ -26,6 +26,6 @@ def createModel(CORPUS_FILE,INVERT_INDEX_FILE,MODEL_FILE):
 		)
 
 	print('Iniciar fit')
-	models = discoverer.fit(ifs, prune = False, expand = corpus)
+	models = discoverer.fit(ifs, prune = True, expand = corpus)
 	print('Terminar fit')
 	models.save(MODEL_FILE)
