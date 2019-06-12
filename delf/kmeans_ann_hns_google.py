@@ -135,12 +135,12 @@ def kMeans(idToFile,clusters):
     
 def main(inputpath):
     if os.path.isdir(inputpath):
-	
+	'''	
         idToFile = read_delf_features(inputpath)
         clusters = get_random_clusters(idToFile)
         kMeans(idToFile,clusters)
-	
-	#count_delf(inputpath)
+	'''
+	count_delf(inputpath)
 
     else:
         print "File doesn't exist"

@@ -2,8 +2,8 @@ import os
 import csv
 import pickle
 
-inputpath = '../../google_landmark_selected_crop/subfolder/'
-files = [None]*20000
+inputpath = '../../google_landmark_selected/'
+files = [None]*10000
 
 index=0
 print('Reading Files')

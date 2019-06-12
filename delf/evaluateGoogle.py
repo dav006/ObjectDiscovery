@@ -17,6 +17,7 @@ with open(objectsRankingFile, 'rb') as handle:
     allObjetsToFileRanked= pickle.load(handle)
 
 print('Size of all objects discovered: {}'.format(len(allObjetsToFileRanked)))
+sys.stdout.flush()
 
 groundTruthImages = {}
 with open(groundTruthFile, 'rb') as handle:
@@ -50,4 +51,4 @@ for key in sorted(groundTruthImages):
 	'''
 	averageAP+=maxAP
 	sys.stdout.flush()
-print('Average AP: {}'.format(averageAP/11.0))
+print('Average AP: {}'.format(averageAP/20.0))

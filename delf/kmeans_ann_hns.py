@@ -11,9 +11,9 @@ import hnswlib
 
 DIM=40
 MAX_ITER = 30
-CLUSTER_NUM = 150000
+CLUSTER_NUM = 1000000
 #DELF_FEATURES = 3810180
-DELF_FEATURES = 183546693
+DELF_FEATURES = 8725976
 
 def read_delf_features(inputpath):
     print('Read delf Features')
@@ -68,7 +68,7 @@ def kMeans(delf_features,clusters):
 			clusters[j] = delf_features[rval]
 			print('Empty cluster replaced')
                 if i==MAX_ITER-1:
-                    p.save_index("hsm_150000_30iter_google_40_desbalan.bin")
+                    p.save_index("hsm_1000000_30iter_google_20_balan_500.bin")
 
 	print('Total time: %.3f s' % (time.time() - start_time))
     

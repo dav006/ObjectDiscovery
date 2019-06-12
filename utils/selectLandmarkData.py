@@ -6,7 +6,7 @@ import operator
 
 inputpath = '../data/google-landmark-dataset-resize/'
 outputpath = '../../google_landmark_selected/'
-maxLandmarks = 40
+maxLandmarks = 20
 
 groundTruthCount = {}
 groundTruth = {}
@@ -14,7 +14,7 @@ with open('groundTruthLandCount.pickle', 'rb') as handle:
     groundTruthCount= pickle.load(handle)
 with open('groundTruthLand.pickle', 'rb') as handle:
     groundTruth= pickle.load(handle)
-print(len(groundTruth))
+
 
 countLandmarks=0
 for key,_ in sorted(groundTruthCount.items(), key=operator.itemgetter(1),reverse=True):
@@ -29,3 +29,4 @@ for key,_ in sorted(groundTruthCount.items(), key=operator.itemgetter(1),reverse
 	countLandmarks+=1
 	if countLandmarks == maxLandmarks:
 		break
+
